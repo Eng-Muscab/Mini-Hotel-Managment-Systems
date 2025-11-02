@@ -1,68 +1,50 @@
 import {
   getAllRooms,
   getRoomById,
-  createRoom,
-  updateRooms,
-  deleteRoom,
+  manageRooms,
 } from "./room.service.js";
 
-export const getAllRoomsController = async (req, res) => {
-  try {
-    const rooms = await getAllRooms();
-    res.status(200).json(rooms);
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-};
+export const roomController = async (req, res) => {
+  const { id } = req.params;
 
-export const getRoomByIdController = async (req, res) => {
   try {
-    const room = await getRoomById(req.params.id);
-    res.status(200).json(room);
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-};
+    switch (req.method) {
+      case "GET":
+        if (id) {
+          const room = await getRoomById(id);
+          return room
+            ? res.status(200).json(room)
+            : res.status(404).json({ message: "Room not found" });
+        }
+        const rooms = await getAllRooms();
+        return res.status(200).json(rooms);
 
-export const createRoomController = async (req, res) => {
-  try {
-    const { name, type } = req.body;
+      case "POST":
+        const { name, type } = req.body;
+        if (!name || !type) {
+          return res.status(400).json({ error: "Name and type are required" });
+        }
+        const createRes = await manageRooms("CREATE", null, name, type);
+        return res.status(201).json(createRes);
 
-    if (!body.name || !body.type) {
-      return res.status(400).json({ error: "Missing required fields" });
+      case "PUT":
+        if (!id) return res.status(400).json({ error: "Room ID required" });
+
+        const { name: uName, type: uType } = req.body;
+        const updateRes = await manageRooms("UPDATE", id, uName, uType);
+        return res.status(200).json(updateRes);
+
+      case "DELETE":
+        if (!id) return res.status(400).json({ error: "Room ID required" });
+
+        const delRes = await manageRooms("DELETE", id);
+        return res.status(200).json(delRes);
+
+      default:
+        return res.status(405).json({ error: "Method not allowed" });
     }
-
-    const room = await createRoom(name, type);
-    res.status(201).json(room);
   } catch (err) {
     console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const updateRoomsController = async (req, res) => {
-  try {
-    const { name, type } = req.body;
-
-    if (!name || !type) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-    const room = await updateRooms(req.params.id, name, type);
-    res.status(200).json(room);
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-export const deleteRoomController = async (req, res) => {
-  try {
-    const room = await deleteRoom(req.params.id);
-    res.status(200).json(room);
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: err.message });
   }
 };
