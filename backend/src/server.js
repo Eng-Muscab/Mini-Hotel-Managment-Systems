@@ -7,6 +7,7 @@ import { customerController } from "./modules/customer/cus.controller.js";
 import { bookingController } from "./modules/booking/booking.controller.js";
 import { roomBedsController } from "./modules/room_beds/rm.controller.js";
 import { bedController } from "./modules/beds/bed.controller.js";
+import authRoutes from "./modules/auth/auth.routes.js";
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use("/api/customers", customerController);
 app.use("/api/bookings", bookingController);
 app.use("/api/roomBeds", roomBedsController);
 app.use("/api/beds", bedController);
+app.use("/api/auth", authRoute);
 
 app.use("/api", (req, res) => res.status(404).json({ message: "Not Found" }));
 
