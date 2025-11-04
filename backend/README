@@ -1,0 +1,141 @@
+-- ==========================================================
+-- CREATE AUTH TABLES IN PUBLIC SCHEMA (FRESH RE-CREATION)
+-- ==========================================================
+
+-- 1️⃣ ROLES TABLE
+CREATE TABLE IF NOT EXISTS public.roles (
+  id SERIAL PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL
+);
+
+-- 2️⃣ USERS TABLE
+CREATE TABLE IF NOT EXISTS public.users (
+  id SERIAL PRIMARY KEY,
+  full_name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- 3️⃣ USER_ROLES (Pivot: Many-to-Many)
+CREATE TABLE IF NOT EXISTS public.user_roles (
+  user_id INT NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
+  role_id INT NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, role_id)
+);
+
+-- ✅ Useful Indexes
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_role ON public.user_roles(role_id);
+
+-- ==========================================================
+-- STORED PROCEDURES (Simple Manage Style)
+-- ==========================================================
+
+-- 4️⃣ ROLES MANAGE
+CREATE OR REPLACE FUNCTION public.roles_manage(
+  p_action TEXT,
+  p_id INT DEFAULT NULL,
+  p_name TEXT DEFAULT NULL
+)
+RETURNS TEXT AS $$
+BEGIN
+  IF p_action = 'ADD' THEN
+    IF p_name IS NULL THEN RETURN 'role name required'; END IF;
+    INSERT INTO public.roles(name) VALUES (p_name);
+    RETURN 'role added';
+
+  ELSIF p_action = 'UPDATE' THEN
+    IF p_id IS NULL THEN RETURN 'role id required'; END IF;
+    UPDATE public.roles SET name = COALESCE(p_name, name) WHERE id = p_id;
+    RETURN 'role updated';
+
+  ELSIF p_action = 'DELETE' THEN
+    IF p_id IS NULL THEN RETURN 'role id required'; END IF;
+    DELETE FROM public.roles WHERE id = p_id;
+    RETURN 'role deleted';
+
+  ELSE
+    RETURN 'invalid action';
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- 5️⃣ USERS MANAGE
+CREATE OR REPLACE FUNCTION public.users_manage(
+  p_action TEXT,
+  p_id INT DEFAULT NULL,
+  p_full_name TEXT DEFAULT NULL,
+  p_email TEXT DEFAULT NULL,
+  p_password_hash TEXT DEFAULT NULL,
+  p_is_active BOOLEAN DEFAULT NULL
+)
+RETURNS TEXT AS $$
+BEGIN
+  IF p_action = 'ADD' THEN
+    IF p_full_name IS NULL OR p_email IS NULL OR p_password_hash IS NULL THEN
+      RETURN 'full_name, email, password_hash required';
+    END IF;
+    INSERT INTO public.users(full_name, email, password_hash, is_active)
+    VALUES (p_full_name, p_email, p_password_hash, COALESCE(p_is_active, TRUE));
+    RETURN 'user added';
+
+  ELSIF p_action = 'UPDATE' THEN
+    IF p_id IS NULL THEN RETURN 'user id required'; END IF;
+    UPDATE public.users
+      SET full_name = COALESCE(p_full_name, full_name),
+          email = COALESCE(p_email, email),
+          password_hash = COALESCE(p_password_hash, password_hash),
+          is_active = COALESCE(p_is_active, is_active)
+    WHERE id = p_id;
+    RETURN 'user updated';
+
+  ELSIF p_action = 'DELETE' THEN
+    IF p_id IS NULL THEN RETURN 'user id required'; END IF;
+    DELETE FROM public.users WHERE id = p_id;
+    RETURN 'user deleted';
+
+  ELSE
+    RETURN 'invalid action';
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- 6️⃣ USER ROLES MANAGE
+CREATE OR REPLACE FUNCTION public.user_roles_manage(
+  p_action TEXT,
+  p_user_id INT DEFAULT NULL,
+  p_role_id INT DEFAULT NULL
+)
+RETURNS TEXT AS $$
+BEGIN
+  IF p_action = 'ASSIGN' THEN
+    IF p_user_id IS NULL OR p_role_id IS NULL THEN RETURN 'user_id & role_id required'; END IF;
+    INSERT INTO public.user_roles(user_id, role_id)
+    VALUES (p_user_id, p_role_id)
+    ON CONFLICT (user_id, role_id) DO NOTHING;
+    RETURN 'role assigned';
+
+  ELSIF p_action = 'REMOVE' THEN
+    IF p_user_id IS NULL OR p_role_id IS NULL THEN RETURN 'user_id & role_id required'; END IF;
+    DELETE FROM public.user_roles WHERE user_id = p_user_id AND role_id = p_role_id;
+    RETURN 'role removed';
+
+  ELSE
+    RETURN 'invalid action';
+  END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- 7️⃣ SEED ROLES
+INSERT INTO public.roles(name) VALUES
+  ('ADMIN'),
+  ('RECEPTIONIST'),
+  ('ACCOUNTANT'),
+  ('MANAGER')
+ON CONFLICT (name) DO NOTHING;

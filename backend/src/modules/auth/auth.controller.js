@@ -1,30 +1,21 @@
-
 import { registerUser, loginUser } from "./auth.service.js";
 
-export async function registerController(req, res) {
+export const registerController = async (req, res) => {
   try {
-    const { full_name, email, password, roles } = req.body;
-    if (!full_name || !email || !password) {
-      return res.status(400).json({ error: "full_name, email, password required" });
-    }
-    const out = await registerUser({ full_name, email, password, roles });
-    res.status(201).json({ message: "Registered", user: out });
-  } catch (e) {
-    res.status(400).json({ error: e.message });
+    const user = await registerUser(req.body);
+    res.status(201).json({ success: true, message: "User registered successfully", user });
+    console.log(user)
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+    console.error(err);
   }
-}
+};
 
-export async function loginController(req, res) {
+export const loginController = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const out = await loginUser({ email, password });
-    res.json(out);
-  } catch (e) {
-    res.status(401).json({ error: e.message });
+    const data = await loginUser(req.body);
+    res.status(200).json({ success: true, message: "Logged in", ...data });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
-}
-
-export function meController(req, res) {
-  // req.user was set by auth middleware
-  res.json({ user: req.user });
-}
+};

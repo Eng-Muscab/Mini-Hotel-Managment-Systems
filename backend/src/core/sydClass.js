@@ -1,4 +1,4 @@
-import { db } from "../config/db.js";
+import { pool as db } from "../config/db.js";
 
 class sydClass {
   constructor() {
