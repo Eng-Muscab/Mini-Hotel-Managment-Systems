@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import api from "../../services/api";
+import api from "../../services/api.js";
 import { useAuth } from "../../context/AuthContext";
 import { toast } from "sonner";
 import {
@@ -28,10 +28,10 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await api.post("/api/auth/login", form);
+      const { data } = await api.post("/auth/login", form);
       login(data.token, data.user, rememberMe);
       toast.success("Welcome back! Login successful 🎉");
-      setTimeout(() => nav("/auth/dashboard"), 600);
+      setTimeout(() => nav("/dashboard"), 600);
     } catch (e) {
       toast.error(e?.response?.data?.error || "Login failed");
     } finally {

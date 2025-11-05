@@ -35,7 +35,7 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     try {
-      await api.post("/api/auth/register", form);
+      await api.post("/auth/register", form);
       toast.success("Account created 🎉 Redirecting to login…");
       setTimeout(() => nav("/auth/login"), 900);
     } catch (e) {
