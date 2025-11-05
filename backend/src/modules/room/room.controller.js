@@ -1,50 +1,136 @@
-import {
-  getAllRooms,
-  getRoomById,
-  manageRooms,
-} from "./room.service.js";
+import * as roomService from './room.service.js';
 
-export const roomController = async (req, res) => {
-  const { id } = req.params;
-
+export const getAllRooms = async (req, res) => {
   try {
-    switch (req.method) {
-      case "GET":
-        if (id) {
-          const room = await getRoomById(id);
-          return room
-            ? res.status(200).json(room)
-            : res.status(404).json({ message: "Room not found" });
-        }
-        const rooms = await getAllRooms();
-        return res.status(200).json(rooms);
+    const rooms = await roomService.getAllRooms();
+    res.json({ 
+      success: true, 
+      data: rooms
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
 
-      case "POST":
-        const { name, type } = req.body;
-        if (!name || !type) {
-          return res.status(400).json({ error: "Name and type are required" });
-        }
-        const createRes = await manageRooms("CREATE", null, name, type);
-        return res.status(201).json(createRes);
-
-      case "PUT":
-        if (!id) return res.status(400).json({ error: "Room ID required" });
-
-        const { name: uName, type: uType } = req.body;
-        const updateRes = await manageRooms("UPDATE", id, uName, uType);
-        return res.status(200).json(updateRes);
-
-      case "DELETE":
-        if (!id) return res.status(400).json({ error: "Room ID required" });
-
-        const delRes = await manageRooms("DELETE", id);
-        return res.status(200).json(delRes);
-
-      default:
-        return res.status(405).json({ error: "Method not allowed" });
+export const getRoomById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const room = await roomService.getRoomById(id);
+    
+    if (!room) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Room not found" 
+      });
     }
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    return res.status(500).json({ error: err.message });
+    
+    res.json({ 
+      success: true, 
+      data: room 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const createRoom = async (req, res) => {
+  try {
+    const { name, type } = req.body;
+    
+    if (!name || !type) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Room name and type are required" 
+      });
+    }
+    
+    const room = await roomService.createRoom(name, type);
+    res.json({ 
+      success: true, 
+      data: room 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const updateRoom = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, type, is_active } = req.body;
+    
+    const room = await roomService.updateRoom(id, name, type, is_active);
+    res.json({ 
+      success: true, 
+      data: room 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const deleteRoom = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const room = await roomService.deleteRoom(id);
+    res.json({ 
+      success: true, 
+      data: room 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const updateRoomStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const room = await roomService.updateRoomStatus(id, status);
+    res.json({ 
+      success: true, 
+      data: room 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const countRooms = async (req, res) => {
+  try {
+    const result = await roomService.countRooms();
+    
+    res.json({ 
+      success: true, 
+      count: result.total,
+      message: `Total rooms: ${result.total}`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Count rooms error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to count rooms',
+      details: error.message 
+    });
   }
 };

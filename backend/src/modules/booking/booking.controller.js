@@ -1,74 +1,191 @@
-import {
-  getAllBookings,
-  getBookingById,
-  manageBookings,
-} from "./booking.service.js";
+import * as bookingService from './booking.service.js';
 
-export const bookingController = async (req, res) => {
-  const { id } = req.params;
-
+export const getAllBookings = async (req, res) => {
   try {
-    switch (req.method) {
-      case "GET":
-        if (id) {
-          const booking = await getBookingById(id);
-          return booking
-            ? res.status(200).json(booking)
-            : res.status(404).json({ message: "Booking not found" });
-        }
-        const bookings = await getAllBookings();
-        return res.status(200).json(bookings);
+    const bookings = await bookingService.getAllBookings();
+    res.json({ 
+      success: true, 
+      data: bookings
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
 
-      case "POST":
-        const { c_id, rb_id, amount, state, start_date, end_date } = req.body;
-        if (!c_id || !rb_id || !amount || !state || !start_date || !end_date) {
-          return res.status(400).json({ error: "All fields are required" });
-        }
-        const createRes = await manageBookings(
-          "CREATE",
-          null,
-          c_id,
-          rb_id,
-          amount,
-          state,
-          start_date,
-          end_date
-        );
-        return res.status(201).json(createRes);
-
-      case "PUT":
-        if (!id) {
-          return res.status(400).json({ error: "Booking ID required" });
-        }
-        const {
-          c_id: uCid,
-          rb_id: uRbId,
-          amount: uAmount,
-          state: uState,
-          start_date: uStartDate,
-          end_date: uEndDate,
-        } = req.body;
-        const updateRes = await manageBookings(
-          "UPDATE",
-          id,
-          uCid,
-          uRbId,
-          uAmount,
-          uState,
-          uStartDate,
-          uEndDate
-        );
-        return res.status(200).json(updateRes);
-
-      case "DELETE":
-        if (!id) {
-          return res.status(400).json({ error: "Booking ID required" });
-        }
-        const deleteRes = await manageBookings("DELETE", id);
-        return res.status(200).json(deleteRes);
+export const getBookingById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await bookingService.getBookingById(id);
+    
+    if (!booking) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Booking not found" 
+      });
     }
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    return res.status(500).json({ error: err.message });
+    
+    res.json({ 
+      success: true, 
+      data: booking 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const createBooking = async (req, res) => {
+  try {
+    const { c_id, rb_id, amount, state, start_date, end_date } = req.body;
+    
+    if (!c_id || !amount || !start_date || !end_date) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Customer ID, amount, start date, and end date are required" 
+      });
+    }
+    
+    const booking = await bookingService.createBooking(
+      c_id, 
+      rb_id, 
+      amount, 
+      state || 'PENDING',  // Default to PENDING instead of 'confirmed'
+      start_date, 
+      end_date
+    );
+    
+    res.status(201).json({ 
+      success: true, 
+      data: booking,
+      message: "Booking created successfully"
+    });
+  } catch (error) {
+    if (error.message.includes('does not exist') || error.message.includes('Invalid booking state')) {
+      return res.status(400).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const updateBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { c_id, rb_id, amount, state, start_date, end_date } = req.body;
+    
+    const booking = await bookingService.updateBooking(
+      id,
+      c_id, 
+      rb_id, 
+      amount, 
+      state, 
+      start_date, 
+      end_date
+    );
+    
+    res.json({ 
+      success: true, 
+      data: booking,
+      message: "Booking updated successfully"
+    });
+  } catch (error) {
+    if (error.message.includes('does not exist') || error.message.includes('Invalid booking state') || error.message.includes('not found')) {
+      return res.status(400).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const deleteBooking = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const booking = await bookingService.deleteBooking(id);
+    
+    if (!booking) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Booking not found" 
+      });
+    }
+    
+    res.json({ 
+      success: true, 
+      data: booking,
+      message: "Booking deleted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const updateBookingStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { state } = req.body;
+    
+    if (!state) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "State is required" 
+      });
+    }
+    
+    const booking = await bookingService.updateBookingStatus(id, state);
+    
+    res.json({ 
+      success: true, 
+      data: booking,
+      message: `Booking status updated to ${state}`
+    });
+  } catch (error) {
+    if (error.message.includes('Invalid booking state') || error.message.includes('not found')) {
+      return res.status(400).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const countBookings = async (req, res) => {
+  try {
+    const result = await bookingService.countBookings();
+    
+    res.json({ 
+      success: true, 
+      count: result.total,
+      message: `Total bookings: ${result.total}`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Count bookings error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to count bookings',
+      details: error.message 
+    });
   }
 };

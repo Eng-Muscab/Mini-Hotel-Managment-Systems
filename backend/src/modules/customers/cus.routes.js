@@ -1,20 +1,14 @@
-import { Router } from "express";
-import {
-  createCustomerController,
-  deleteCustomerController,
-  getAllCustomersController,
-  getCustomerByIdController,
-  updateCustomerController,
-} from "./cus.controller";
+import express from 'express';
+import * as customerController from './cus.controller.js';
 
-const router = Router();
+const router = express.Router();
 
-// Define your customer routes here
-
-router.get("/", getAllCustomersController);
-router.get("/:id", getCustomerByIdController);
-router.post("/", createCustomerController);
-router.put("/:id", updateCustomerController);
-router.delete("/:id", deleteCustomerController);
+router.get('/count', customerController.countCustomers);
+router.get('/', customerController.getAllCustomers);
+router.get('/:id', customerController.getCustomerById);
+router.post('/', customerController.createCustomer);
+router.put('/:id', customerController.updateCustomer);
+router.patch('/:id/status', customerController.updateCustomerStatus);
+router.delete('/:id', customerController.deleteCustomer);
 
 export default router;

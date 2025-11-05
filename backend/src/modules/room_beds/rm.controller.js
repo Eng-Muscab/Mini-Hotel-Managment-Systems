@@ -13,12 +13,13 @@ export const roomBedsController = async (req, res) => {
                         : res.status(404).json({message: "Room Bed not found"});
                 }
                 const roomBeds = await getAllRoomBeds();
-                return res.status(200).json(roomBeds);
+                return res.status(200).json(roomBeds.rows);
             case "POST":
                 const {room_id, bed_id, amount, state, iswifi, isac, istv} = req.body;
                 if(!room_id || !bed_id || !amount || !state || !iswifi || !isac || !istv){
                     return res.status(400).json({error: "All fields are required"});
                 }
+                
                 const createRes = await manageRoomBeds("CREATE", null, room_id, bed_id, amount, state, iswifi, isac, istv);
                 return res.status(201).json(createRes);
             case "PUT":

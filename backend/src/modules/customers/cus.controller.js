@@ -1,61 +1,136 @@
-import { createCustomer, deleteCustomer, getAllCustomers, updateCustomer } from "./cus.service";
+import * as customerService from './cus.service.js';
 
-export const getAllCustomersController = async (req, res) => {
+export const getAllCustomers = async (req, res) => {
   try {
-    const customers = await getAllCustomers();
-    res.status(200).json(customers);
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
+    const customers = await customerService.getAllCustomers();
+    res.json({ 
+      success: true, 
+      data: customers
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
-export const getCustomerByIdController = async (req, res) => {
-  const { id } = req.params;
+export const getCustomerById = async (req, res) => {
   try {
-    const customer = await getCustomerById(id);
-
-    if (customer) {
-      res.status(200).json(customer);
-    } else {
-      res.status(404).json({ error: "Customer not found" });
+    const { id } = req.params;
+    const customer = await customerService.getCustomerById(id);
+    
+    if (!customer) {
+      return res.status(404).json({ 
+        success: false, 
+        error: "Customer not found" 
+      });
     }
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
+    
+    res.json({ 
+      success: true, 
+      data: customer 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
-export const createCustomerController = async (req, res) => {
-  const { name, email } = req.body;
+export const createCustomer = async (req, res) => {
   try {
-    await createCustomer(name, email);
-    res.status(201).json({ message: "Customer created successfully" });
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
+    const { name, phone, refrece, ref_phone } = req.body;
+    
+    if (!name || !phone) {
+      return res.status(400).json({ 
+        success: false, 
+        error: "Customer name and phone are required" 
+      });
+    }
+    
+    const customer = await customerService.createCustomer(name, phone, refrece, ref_phone);
+    res.json({ 
+      success: true, 
+      data: customer 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
-export const updateCustomerController = async (req, res) => {
-  const { id } = req.params;
-  const { name, email } = req.body;
+export const updateCustomer = async (req, res) => {
   try {
-    await updateCustomer(id, name, email);
-    res.status(200).json({ message: "Customer updated successfully" });
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
+    const { id } = req.params;
+    const { name, phone, refrece, ref_phone, is_active } = req.body;
+    
+    const customer = await customerService.updateCustomer(id, name, phone, refrece, ref_phone, is_active);
+    res.json({ 
+      success: true, 
+      data: customer 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
   }
 };
 
-export const deleteCustomerController = async (req, res) => {
-  const { id } = req.params;
+export const deleteCustomer = async (req, res) => {
   try {
-    await deleteCustomer(id);
-    res.status(200).json({ message: "Customer deleted successfully" });
-  } catch (err) {
-    console.error("SQL Error:", err.message);
-    res.status(500).json({ error: err.message });
+    const { id } = req.params;
+    const customer = await customerService.deleteCustomer(id);
+    res.json({ 
+      success: true, 
+      data: customer 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const updateCustomerStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const customer = await customerService.updateCustomerStatus(id, status);
+    res.json({ 
+      success: true, 
+      data: customer 
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+};
+
+export const countCustomers = async (req, res) => {
+  try {
+    const result = await customerService.countCustomers();
+    
+    res.json({ 
+      success: true, 
+      count: result.total,
+      message: `Total customers: ${result.total}`,
+      data: result
+    });
+  } catch (error) {
+    console.error('Count customers error:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to count customers',
+      details: error.message 
+    });
   }
 };
